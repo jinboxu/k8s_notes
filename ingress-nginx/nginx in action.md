@@ -206,13 +206,9 @@ X-Forwarded-For: IP0, IP1, IP2
 3. 同理，Proxy3 按照第二部构造出 `X-Forwarded-For: IP0, IP1, IP2`,转发给真正的服务器，比如NGINX，nginx收到了http请求，里面就是 `X-Forwarded-For: IP0, IP1, IP2` 这样的结果。所以Proxy 3 的IP3，不会出现在这里。
 4. nginx 获取proxy3的IP 能通过![remote_address获取到，因为这个](https://math.jianshu.com/math?formula=remote_address%E8%8E%B7%E5%8F%96%E5%88%B0%EF%BC%8C%E5%9B%A0%E4%B8%BA%E8%BF%99%E4%B8%AA)remote_address就是真正建立TCP链接的IP，这个不能伪造，是直接产生链接的IP。**$remote_address  无法伪造，因为建立 TCP 连接需要三次握手，如果伪造了源 IP，无法建立 TCP 连接，更不会有后面的 HTTP 请求。**
 
-> 参考文档： https://www.jianshu.com/p/15f3498a7fad
 
 
-
-
-
-```shell
+```nginx
 server { 
         listen       80; 
         server_name  localhost;
@@ -220,7 +216,7 @@ server {
         #charset koi8-r; 
         #access_log  logs/host.access.log  main;
  
-        location /{ 
+        location / { 
             root   html;
             index  index.html index.htm;
                             proxy_pass                  http://backend; 
@@ -312,7 +308,67 @@ server {
 
 
 
-#### 4. 
+#### 4.  4层代理
 
-https://github.com/kubernetes/ingress-nginx/blob/master/docs/examples/rewrite/README.md   ingress rewrite
+https://www.cnblogs.com/xiaopaipai/p/10070668.html
+
+
+
+**通过nginx对gitlab做http代理和ssh协议代理**
+
+```nginx
+...
+
+stream {
+    # include stream.conf;
+  
+    upstream gitlab {
+        server 10.170.40.56:222;
+    }
+    
+    server {
+        listen 222;
+        proxy_connect_timeout 5;
+        proxy_pass gitlab;
+    }
+}
+
+http {
+    ...
+}
+```
+
+
+
+conf.d/gitlab.conf :
+
+```nginx
+upstream gitlab_server {
+    server 10.170.40.56:8008;
+    keepalive 16
+}
+
+server {
+    listen 443 ssl;
+    server_name gitlab-inside.xxx.com
+    
+    # 多个二级域名使用统一证书
+    include conf.d/ssl_certificate.conf
+    
+    location / {
+        proxy_pass http://gitlab_server;
+    }
+    
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root html;
+    }
+}
+
+server {
+    listen 80;
+    server_name gitlab-inside.xxx.com
+    rewrite ^/(.*)$ https://$server_name/$1 permanent;
+}
+```
 
