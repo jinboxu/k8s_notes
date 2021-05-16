@@ -268,7 +268,7 @@ rewrite flag标志:
 
 
 
-```
+```nginx
 server {
       listen       80;
       server_name  localhost;
@@ -293,7 +293,7 @@ server {
 > - 在`/download/`中，rewrite指令后面没有last执行，则会顺序执行到return 200；语句，而不会继续到/pics/下；
 > - 如果在`/download/`的rewrite中加入break语句，则会显示pics中的内容，而不会显示 /pics/中的return 200。如：
 >
-> ```
+> ```nginx
 > location /download/ {
 >     root /home/nginx;
 >     rewrite /download/(.*) /pics/$1 break;
@@ -306,9 +306,43 @@ server {
 
 
 
+#### 4. Nginx下 return 和 rewrite在 301重定向上的区别
+
+return code URL;中的code一般是重定向状态码。
+
+重定向状态码有：
+
+- 301：永久重定向（HTTP1.0标准）
+- 302：临时重定向，禁止被缓存（HTTP1.0标准）
+- 303：临时重定向，禁止被缓存，允许改变方法（HTTP2.0标准）
+- 307：临时重定向，禁止被缓存，不允许改变方法（HTTP2.0标准）
+- 308：永久重定向，不允许改变方法（HTTP2.0标准）
 
 
-#### 4.  4层代理
+
+从上文rewrite可以实现301永久重定向，它与return做重定向时的区别在哪里呢?
+
+https://www.liaosam.com/difference-of-return-and-rewrite-nginx-301-redirect.html
+
+
+
+唯一的区别：正则匹配的性能区别：
+
+1. rewrite ^/(.*)$ https://example.com/$1;
+2. rewrite ^ https://example.com$request_uri? permanent;
+3. **return 301 https://example.com$request_uri;**
+
+第一种 rewrite 写法是抓取所有的 URI 再减去开头第一个 / (反斜线)。
+
+第二种写法用了$request_uri 省去了减去开头第一个反斜线的过程，正则匹配上性能更优。但仍不如第三种写法，因为 rewrite 有很多写法和规则，执行到最后 nginx 才知道这是一个 301 永久重定向。
+
+第三种则直接 return 301 + $request_uri，直接告诉 nginx 这是个 301重定向，直接抓取指定URI。
+
+所以以上三种写法，第三种性能更优一些。当然，一般情况下快那么一点点，作为普通业余站长来说，我们也感觉不到。
+
+
+
+#### 5.  4层代理
 
 https://www.cnblogs.com/xiaopaipai/p/10070668.html
 
@@ -337,6 +371,8 @@ http {
     ...
 }
 ```
+
+> stream与http块在同一级
 
 
 
@@ -371,4 +407,6 @@ server {
     rewrite ^/(.*)$ https://$server_name/$1 permanent;
 }
 ```
+
+
 
