@@ -410,3 +410,46 @@ server {
 
 
 
+
+
+#### 6. proxy_set_header设置Host为$proxy_host，$host与$local_host的区别
+
+https://www.cnblogs.com/goloving/p/13663843.html
+
+```nginx
+// 如果想让Host是crmtest.aty.sohuno.com，则进行如下设置：
+proxy_set_header Host crmtest.aty.sohuno.com;
+
+// 如果不想改变请求头“Host”的值，可以这样来设置：
+proxy_set_header Host $http_host;
+
+// 但是，如果客户端请求头中没有携带这个头部，那么传递到后端服务器的请求也不含这个头部。 
+// 这种情况下，更好的方式是使用$host变量——它的值在请求包含“Host”请求头时为“Host”字段的值，在请求未携带“Host”请求头时为虚拟主机的主域名：
+proxy_set_header Host       $host;
+
+// 此外，服务器名可以和后端服务器的端口一起传送：
+proxy_set_header Host $host:$proxy_port;
+
+// 如果某个请求头的值为空，那么这个请求头将不会传送给后端服务器：
+proxy_set_header Accept-Encoding "";
+```
+
+
+
+
+
+JumpServer反向代理：https://docs.jumpserver.org/zh/master/admin-guide/proxy/#2-nginx
+
+在一开始没有配置```proxy_set_header Host       $host;```之前jumpserver无法被正常访问 =>
+
+查看jumpserver的nginx配置:
+
+![server_name](..\pics\server_name.png)
+
+> 原来没有传递Host头无法被匹配
+>
+> server_name _       表示匹配所有域名，
+> server_name “”      会匹配没有传递Host头部的情况。
+
+
+
