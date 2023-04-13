@@ -373,7 +373,7 @@ $ kubeadm token create
 openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
 ```
 
-用上面输出的`token`和`sha256`的值或者是利用`kubeadm token create --print-join-command`拼接`join`命令即可
+用上面输出的`token`和`sha256`的值拼接`join`命令即可(或是直接利用`kubeadm token create --print-join-command`)
 
 
 
